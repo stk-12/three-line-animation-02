@@ -1,9 +1,16 @@
 attribute float aIndex;
+attribute vec3 instancePosition;
+attribute vec3 instanceScale;
+attribute vec4 instanceRotation;
 varying vec2 vUv;
 uniform float uTime;
 uniform float uWave;
 
-#pragma glslify: pnoise = require(glsl-noise/periodic/3d);
+// #pragma glslify: pnoise = require(glsl-noise/periodic/3d);
+
+vec3 applyQuaternionToVector(vec4 q, vec3 v) {
+    return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+}
 
 void main() {
   vUv = uv;
@@ -29,11 +36,20 @@ void main() {
   float wave = sin(uv.y * 10.0 + uTime * 2.0 + delay) * 0.05;
   pos.xy += normalize(pos.xy) * wave * uWave;
 
+  // インスタンスのスケールを適用
+  pos *= instanceScale;
+
+  // インスタンスの回転を適用
+  pos = applyQuaternionToVector(instanceRotation, pos);
+
+  // インスタンスの位置を適用
+  pos += instancePosition;
+
   // vNormal = normal;
   // vDistortion = distortion * 0.1;
 
-  // gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   // 各インスタンスごとの回転や移動を反映
-  vec3 transformed = vec3(modelMatrix * vec4(pos, 1.0));
-  gl_Position = projectionMatrix * viewMatrix * vec4(transformed, 1.0);
+  // vec3 transformed = vec3(modelMatrix * vec4(pos, 1.0));
+  // gl_Position = projectionMatrix * viewMatrix * vec4(transformed, 1.0);
 }

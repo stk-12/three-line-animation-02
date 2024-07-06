@@ -20,6 +20,7 @@ void main() {
   vec3 RED = vec3(0.831, 0.247, 0.552);
   vec3 BLUE = vec3(0.007, 0.313, 0.772);
 
-  vec3 color = mix(RED, BLUE, 0.5);
+  // vec3 color = mix(RED, BLUE, 0.5);
+  vec3 color = vec3(0.0, 0.0, 0.0);
   gl_FragColor = vec4(color, 1.0);
 }

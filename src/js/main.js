@@ -2,9 +2,9 @@ import '../css/style.scss'
 import * as THREE from "three";
 import { radian } from "./utils";
 import { gsap } from "gsap";
-// import { ScrollTrigger } from "gsap/ScrollTrigger";
-// gsap.registerPlugin(ScrollTrigger);
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+gsap.registerPlugin(ScrollTrigger);
+// import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import vertexSource from "./shader/vertexShader.glsl";
 import fragmentSource from "./shader/fragmentShader.glsl";
 
@@ -23,10 +23,10 @@ class Main {
     this.cameraFov = 45;
     this.cameraFovRadian = (this.cameraFov / 2) * (Math.PI / 180);
     this.cameraDistance = (this.viewport.height / 2) / Math.tan(this.cameraFovRadian);
-    this.controls = null;
+    // this.controls = null;
 
     this.instancedMesh = null;
-    this.instanceCount = 10;
+    this.instanceCount = 100;
     this.instanceDummy = new THREE.Object3D();
 
     this.animationParams = {
@@ -53,7 +53,7 @@ class Main {
         value: 0.0
       },
       uWave: {
-        value: 150.0
+        value: 550.0
       },
       // uTex: {
       //   value: this.texture
@@ -88,10 +88,10 @@ class Main {
     this.scene.add(this.camera);
   }
 
-  _setControlls() {
-    this.controls = new OrbitControls(this.camera, this.canvas);
-    this.controls.enableDamping = true;
-  }
+  // _setControlls() {
+  //   this.controls = new OrbitControls(this.camera, this.canvas);
+  //   this.controls.enableDamping = true;
+  // }
 
   _setLight() {
     const light = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -103,6 +103,9 @@ class Main {
   _addRingMesh() {
     const geometry = new THREE.RingGeometry(300, 300.5, 64);
     const indices = new Float32Array(this.instanceCount);
+    const positions = new Float32Array(this.instanceCount * 3);
+    const scales = new Float32Array(this.instanceCount * 3);
+    const rotations = new Float32Array(this.instanceCount * 4);
 
     for (let i = 0; i < this.instanceCount; i++) {
       indices[i] = i;
@@ -119,11 +122,25 @@ class Main {
 
     this.instancedMesh = new THREE.InstancedMesh(geometry, material, this.instanceCount);
 
+    // for (let i = 0; i < this.instanceCount; i++) {
+    //   this.instanceDummy.rotation.set(0, 0, 0);
+    //   this.instanceDummy.updateMatrix();
+    //   this.instancedMesh.setMatrixAt(i, this.instanceDummy.matrix);
+    // }
     for (let i = 0; i < this.instanceCount; i++) {
       this.instanceDummy.rotation.set(0, 0, 0);
       this.instanceDummy.updateMatrix();
+
+      positions.set([this.instanceDummy.position.x, this.instanceDummy.position.y, this.instanceDummy.position.z], i * 3);
+      scales.set([this.instanceDummy.scale.x, this.instanceDummy.scale.y, this.instanceDummy.scale.z], i * 3);
+      rotations.set([this.instanceDummy.quaternion.x, this.instanceDummy.quaternion.y, this.instanceDummy.quaternion.z, this.instanceDummy.quaternion.w], i * 4);
+
       this.instancedMesh.setMatrixAt(i, this.instanceDummy.matrix);
     }
+
+    geometry.setAttribute('instancePosition', new THREE.InstancedBufferAttribute(positions, 3));
+    geometry.setAttribute('instanceScale', new THREE.InstancedBufferAttribute(scales, 3));
+    geometry.setAttribute('instanceRotation', new THREE.InstancedBufferAttribute(rotations, 4));
 
     this.scene.add(this.instancedMesh);
   }
@@ -193,10 +210,10 @@ class Main {
   init() {
     this._setRenderer();
     this._setCamera();
-    this._setControlls();
+    // this._setControlls();
     this._setLight();
     this._addRingMesh();
-    // this._setAnimation();
+    this._setAnimation();
 
     this._update();
     this._addEvent();
@@ -205,6 +222,10 @@ class Main {
   _update() {
     const elapsedTime = this.clock.getElapsedTime();
     this.uniforms.uTime.value = elapsedTime;
+
+    const positions = new Float32Array(this.instanceCount * 3);
+    const scales = new Float32Array(this.instanceCount * 3);
+    const rotations = new Float32Array(this.instanceCount * 4);
 
     for (let i = 0; i < this.instanceCount; i++) {
       const index = i + 1;
@@ -239,13 +260,27 @@ class Main {
       );
 
       this.instanceDummy.updateMatrix();
+
+      positions.set([this.instanceDummy.position.x, this.instanceDummy.position.y, this.instanceDummy.position.z], i * 3);
+      scales.set([this.instanceDummy.scale.x, this.instanceDummy.scale.y, this.instanceDummy.scale.z], i * 3);
+      rotations.set([this.instanceDummy.quaternion.x, this.instanceDummy.quaternion.y, this.instanceDummy.quaternion.z, this.instanceDummy.quaternion.w], i * 4);
+
       this.instancedMesh.setMatrixAt(i, this.instanceDummy.matrix);
     }
+    
+    this.instancedMesh.geometry.attributes.instancePosition.array = positions;
+    this.instancedMesh.geometry.attributes.instanceScale.array = scales;
+    this.instancedMesh.geometry.attributes.instanceRotation.array = rotations;
+
+    this.instancedMesh.geometry.attributes.instancePosition.needsUpdate = true;
+    this.instancedMesh.geometry.attributes.instanceScale.needsUpdate = true;
+    this.instancedMesh.geometry.attributes.instanceRotation.needsUpdate = true;
+
     this.instancedMesh.instanceMatrix.needsUpdate = true;
 
     //レンダリング
     this.renderer.render(this.scene, this.camera);
-    this.controls.update();
+    // this.controls.update();
     requestAnimationFrame(this._update.bind(this));
   }
 
