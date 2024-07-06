@@ -4,6 +4,7 @@ import { radian } from "./utils";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
+import Lenis from "@studio-freight/lenis";
 // import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import vertexSource from "./shader/vertexShader.glsl";
 import fragmentSource from "./shader/fragmentShader.glsl";
@@ -26,8 +27,12 @@ class Main {
     // this.controls = null;
 
     this.instancedMesh = null;
-    this.instanceCount = 100;
+    this.instanceCount = 10;
     this.instanceDummy = new THREE.Object3D();
+
+    this.lenis = new Lenis({
+      lerp: 0.03, // 慣性の強さ
+    });
 
     this.animationParams = {
       speed: {
@@ -219,7 +224,9 @@ class Main {
     this._addEvent();
   }
 
-  _update() {
+  _update(time) {
+    this.lenis.raf(time);
+
     const elapsedTime = this.clock.getElapsedTime();
     this.uniforms.uTime.value = elapsedTime;
 
