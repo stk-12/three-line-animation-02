@@ -27,7 +27,7 @@ class Main {
     // this.controls = null;
 
     this.instancedMesh = null;
-    this.instanceCount = 10;
+    this.instanceCount = 100;
     this.instanceDummy = new THREE.Object3D();
 
     this.lenis = new Lenis({
